@@ -98,4 +98,42 @@ def LoopSplitPass : InterfacePass<"loop-split", "mlir::FunctionOpInterface"> {
   ];
 }
 
+//===----------------------------------------------------------------------===//
+// AlternateReductionLoop
+//===----------------------------------------------------------------------===//
+
+def AlternateReductionLoopPass : InterfacePass<
+  "alternate-reduction-loop", "mlir::FunctionOpInterface"
+> {
+  let summary = "Convert streaming reduction loops to alternating iteration pattern";
+  let description = [{
+    Detects ForOp loops containing reduce operations and transforms them into
+    an alternating iteration pattern where consecutive iterations traverse
+    in opposite directions (forward/backward).
+    
+    This optimization improves cache locality for streaming memory patterns
+    by ensuring consecutive loop iterations access nearby memory locations.
+    
+    Example transformation:
+    
+    Before:
+      for j in (0 to N, step 1) {
+        // reduction operations on K[..., j] and V[..., j]
+      }
+    
+    After:
+      for i in (0 to TILE_X, step 1) {
+        for step in (0 to N, step 1) {
+          j = (i % 2 == 0) ? step : (N - 1 - step)
+          // reduction operations using j
+        }
+      }
+  }];
+  let options = [
+    Option<"tileXFactor", "tile-x-factor",
+      "int", /*default=*/"2",
+      "Factor for outer alternating loop (number of directions to alternate)">
+  ];
+}
+
 #endif // CUDATILE_DIALECT_CUDATILE_TRANSFORMS_PASSES_TD

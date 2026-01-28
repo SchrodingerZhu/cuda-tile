@@ -1,4 +1,5 @@
 add_mlir_library(CudaTileTransforms
+  AlternateReductionLoop.cpp
   FuseFMA.cpp
   LoopSplit.cpp
   SynthesizeDebugInfoScopes.cpp
